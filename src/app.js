@@ -2,6 +2,7 @@ const express=require('express')
 const app=express()
 const port=3000
 const User=require('./models/user')
+const validator=require('validator')
 const {connectDB}=require('./config/database')
 
 app.use(express.json())
@@ -36,17 +37,28 @@ app.post('/signup',async (req,res)=>{
     
 })
 
-app.patch('/update',async (req,res)=>{
+app.patch('/update/:userId',async (req,res)=>{
     
     try{
-        const id=req.body._id
+        const id=req.params?.userId
         const data=req.body
+        const allowed_updates=["lastname","password","emailId"]
+        
+
+        const isUpdatesAllowed=Object.keys(data).every(k=>allowed_updates.includes(k))
+
+        if(!isUpdatesAllowed){
+            throw new Error('Patch API Validation Failed')
+        }
+        if(!validator.isEmail(data.emailId)){
+            throw new Error('Bad Email')
+        }
         const user= await User.findByIdAndUpdate({_id:id}, data,{returnDocument:"after"})
         console.log(user)
         res.send('update success')
     }
         catch(err){
-        res.status(400).send('something is wrong')
+        res.status(400).send(err.message)
     }
 })
 
