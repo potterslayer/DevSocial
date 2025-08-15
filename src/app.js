@@ -6,30 +6,12 @@ const validator=require('validator')
 const {connectDB}=require('./config/database')
 const {validatesignupData}=require('./utils/validate')
 const bcrypt=require('bcrypt')
+const cookieParser = require('cookie-parser')
+const jwt=require("jsonwebtoken")
+const {userauth}=require('./middlewares/auth')
 
 app.use(express.json())
-
-app.get('/feed',async (req,res)=>{
-    try{
-        const user=await User.find({})
-        res.send(user)
-    }
-    catch(err){
-        res.status(400).send('something is wrong')
-    }
-
-})
-app.get('/user',async (req,res)=>{
-    const userEmail=req.body.emailId
-    try{
-        const user=await User.find({emailId:userEmail})
-        res.send(user)
-    }
-    catch(err){
-        res.status(400).send('something is wrong')
-    }
-
-})
+app.use(cookieParser())
 
 app.post('/signup',async (req,res)=>{
     try{
@@ -62,6 +44,11 @@ app.post('/login',async (req,res)=>{
     }
     const ispasswordValid=await bcrypt.compare(password,user.password)
     if(ispasswordValid){
+        //Create JWT token
+        const token=await jwt.sign({_id:user._id},"SecretKey",{expiresIn:'7d'})
+
+        //add token to cookie
+        res.cookie("token",token)
         res.send('login successful')
     }
     else{
@@ -73,46 +60,20 @@ catch(err){
 }
 
 })
-
-app.patch('/update/:userId',async (req,res)=>{
-    
+app.get('/profile',userauth,async(req,res)=>{
     try{
-        const id=req.params?.userId
-        const data=req.body
-        const allowed_updates=["lastname","password","emailId"]
-        
-
-        const isUpdatesAllowed=Object.keys(data).every(k=>allowed_updates.includes(k))
-
-        if(!isUpdatesAllowed){
-            throw new Error('Patch API Validation Failed')
-        }
-        if(!validator.isEmail(data.emailId)){
-            throw new Error('Bad Email')
-        }
-        const user= await User.findByIdAndUpdate({_id:id}, data,{returnDocument:"after"})
-        console.log(user)
-        res.send('update success')
-    }
-        catch(err){
-        res.status(400).send(err.message)
-    }
+    user=req.user
+    res.send(user)
+}
+catch(err){
+    res.status(400).send('error:'+err.message)
+}
 })
 
-
-
-app.delete('/delete',async (req,res)=>{
-    try{
-    const id=req.body.userId
-    const user=await findByIdAndDelete(id)
-        res.send("update successful")
-    }
-    catch(err){
-        res.status(400).send('delete error')
-    }
-
+app.post('/sendconnectionrequest',userauth,async(req,res)=>{
+    const user=req.user
+    res.send(user.firstName+'sent connection request')
 })
-
 connectDB().then(()=>{
     console.log('DB connected')
     app.listen(port,()=>{console.log('server started')})
