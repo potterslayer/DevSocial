@@ -1,0 +1,16 @@
+Post /signup
+post /login
+post /logout 
+
+get /profile/view
+patch /profile/edit
+patch /profile/password
+
+get /user/connections
+get /user/requests
+get/user/feed
+
+post /request/send/interested/:userid
+post /request/send/ignored/:userid
+post /request/review/accepted/:requestid
+post /request/review/rejected/:requestid
