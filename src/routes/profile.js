@@ -2,6 +2,8 @@ const express=require("express")
 const profileRouter=express.Router()
 const {userauth}=require('../middlewares/auth')
 const {validateeditdata}=require('../utils/validate')
+const validator=require('validator')
+const bcrypt=require("bcrypt")
 
 profileRouter.get('/profile/view',userauth,async(req,res)=>{
     try{
@@ -24,6 +26,34 @@ profileRouter.patch('/profile/edit',userauth,async(req,res)=>{
         message:`${LoggedInUser.firstName}, profile updated successfully`,
         data:LoggedInUser
     })
+}
+catch(err){
+    res.status(400).send("error"+err.message)
+}
+})
+
+profileRouter.patch('/profile/password',userauth,async(req,res)=>{
+    try{
+    const LoggedInUser=req.user
+    const{OldPassword,NewPassword}=req.body
+    const ispasswordValid=await bcrypt.compare(OldPassword,LoggedInUser.password)
+    console.log(ispasswordValid)
+    
+    if(ispasswordValid){
+        if(!validator.isStrongPassword(NewPassword)){
+            throw new Error("Enter Strong New Password")
+        }
+        const passwordHash=await bcrypt.hash(NewPassword,10)
+        LoggedInUser.password=passwordHash
+        await LoggedInUser.save()
+        res.json({
+            message:`${LoggedInUser.firstName},password changed`
+        })
+    }
+    else{
+        throw new Error('Enter Correct Old Password')
+    }
+    
 }
 catch(err){
     res.status(400).send("error"+err.message)
