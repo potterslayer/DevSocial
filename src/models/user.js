@@ -22,6 +22,13 @@ const userSchema=new mongoose.Schema({
     gender:{
         type:String,
     },
-})
+    about: {
+      type: String,
+      default: "This is a default about of the user!",
+    },
+    skills: {
+      type: [String],
+    },
+},{timestamps:true})
 
 module.exports=mongoose.model('User',userSchema)
